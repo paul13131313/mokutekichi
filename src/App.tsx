@@ -204,7 +204,7 @@ export default function App() {
           <div style={{ maxWidth: 560, margin: '0 auto', borderRadius: 16, padding: 20, background: 'rgba(10,10,10,0.88)', backdropFilter: 'blur(20px)', pointerEvents: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ color: '#00BFFF', fontSize: 14, fontWeight: 300, letterSpacing: 1 }}>マンションポエムメーカー</span>
-              <span style={{ fontSize: 10, opacity: 0.25 }}>v2.3</span>
+              <span style={{ fontSize: 10, opacity: 0.25 }}>v3.0</span>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch() }} style={{ display: 'flex', gap: 8 }}>
               <input
