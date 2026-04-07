@@ -125,23 +125,25 @@ export default function App() {
         ctx.restore()
       }
 
-      // 3. Draw poem text
+      // 3. Draw poem text (left side, away from pillar)
       if (poem) {
         const rect = cesiumCanvas.getBoundingClientRect()
         const scaleX = w / rect.width
-        const poemFontSize = Math.round(36 * scaleX)
-        const poemLines = poem.split('。').filter(s => s.trim()).map((s, i, arr) => s + (i < arr.length - 1 ? '。' : ''))
+        const poemFontSize = Math.round(24 * scaleX)
+        const poemLines = poem.split('。').filter(s => s.trim()).map((s, i, arr) =>
+          s.trim() + (i < arr.length - 1 ? '。' : (poem.endsWith('。') ? '。' : ''))
+        )
         ctx.save()
         ctx.font = `400 ${poemFontSize}px 'Noto Serif JP', serif`
         ctx.fillStyle = '#FFFFFF'
         ctx.shadowColor = 'rgba(0,0,0,0.8)'
-        ctx.shadowBlur = 20 * scaleX
+        ctx.shadowBlur = 16 * scaleX
         ctx.textAlign = 'left'
-        const x = 48 * scaleX
-        let y = 80 * scaleX
+        const x = 40 * scaleX
+        let y = 56 * scaleX
         for (const line of poemLines) {
           ctx.fillText(line, x, y + poemFontSize)
-          y += poemFontSize * 1.8
+          y += poemFontSize * 1.6
         }
         ctx.restore()
       }
@@ -261,18 +263,21 @@ export default function App() {
 
       {/* Poem overlay — large typography like real estate ads */}
       {coords && poem && (
-        <div id="poem-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10, pointerEvents: 'none', padding: '48px 32px 0' }}>
-          <div style={{ maxWidth: 700, whiteSpace: 'pre-line', textAlign: 'left', textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.5)' }}>
-            <p style={{
-              fontSize: 'clamp(28px, 5vw, 48px)',
-              fontFamily: "'Noto Serif JP', 'Hiragino Mincho ProN', serif",
-              fontWeight: 400,
-              lineHeight: 1.8,
-              letterSpacing: 3,
-              color: '#FFFFFF',
-            }}>
-              {poem.replace(/。/g, '。\n').replace(/\n$/, '')}
-            </p>
+        <div id="poem-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10, pointerEvents: 'none', padding: '40px 32px 0' }}>
+          <div style={{ maxWidth: '80vw', textAlign: 'left', textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.5)' }}>
+            {poem.split('。').filter(s => s.trim()).map((s, i, arr) => (
+              <p key={i} style={{
+                fontSize: 'clamp(20px, 3vw, 32px)',
+                fontFamily: "'Noto Serif JP', 'Hiragino Mincho ProN', serif",
+                fontWeight: 400,
+                lineHeight: 1.6,
+                letterSpacing: 3,
+                color: '#FFFFFF',
+                marginBottom: i < arr.length - 1 ? 8 : 0,
+              }}>
+                {s.trim()}{i < arr.length - 1 ? '。' : (poem.endsWith('。') ? '。' : '')}
+              </p>
+            ))}
           </div>
         </div>
       )}
