@@ -1,5 +1,14 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 import CesiumView from './components/CesiumView'
+
+// Start loading Maps SDK immediately at module load (not inside component)
+const geocoderPromise: Promise<google.maps.Geocoder> = (() => {
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
+  if (!apiKey) return Promise.reject(new Error('No API key'))
+  setOptions({ key: apiKey, v: 'weekly' })
+  return importLibrary('geocoding').then((lib) => new lib.Geocoder())
+})()
 
 export default function App() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -13,22 +22,14 @@ export default function App() {
   const [error, setError] = useState('')
   const cesiumRef = useRef<HTMLDivElement>(null)
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)
-  const geoInitRef = useRef(false)
   const [geoReady, setGeoReady] = useState(false)
 
-  // Init geocoder
-  if (!geoInitRef.current) {
-    geoInitRef.current = true
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
-    if (apiKey) {
-      import('@googlemaps/js-api-loader').then(({ setOptions, importLibrary }) => {
-        setOptions({ key: apiKey, v: 'weekly' })
-        importLibrary('geocoding').then((lib) => {
-          geocoderRef.current = new lib.Geocoder()
-          setGeoReady(true)
-        })
-      })
-    }
+  useEffect(() => {
+    geocoderPromise.then((gc) => {
+      geocoderRef.current = gc
+      setGeoReady(true)
+    }).catch(() => {})
+  }, [])
   }
 
   const handleSearch = useCallback(async () => {
