@@ -71,7 +71,74 @@ export default function App() {
     setSaving(true)
     await new Promise(r => setTimeout(r, 500))
     try {
-      const blob = await captureScreenshot(container)
+      const cesiumCanvas = container.querySelector('canvas')
+      if (!cesiumCanvas) throw new Error('Canvas not found')
+
+      const w = cesiumCanvas.width
+      const h = cesiumCanvas.height
+
+      // Composite canvas: Cesium + light pillar
+      const out = document.createElement('canvas')
+      out.width = w
+      out.height = h
+      const ctx = out.getContext('2d')!
+
+      // 1. Draw Cesium scene
+      ctx.drawImage(cesiumCanvas, 0, 0)
+
+      // 2. Draw light pillar on top
+      const pillar = pillarRef.current
+      if (pillar && coords) {
+        const rect = cesiumCanvas.getBoundingClientRect()
+        const scaleX = w / rect.width
+        const scaleY = h / rect.height
+
+        const pLeft = parseFloat(pillar.style.left || '0')
+        const pHeight = parseFloat(pillar.style.height || '0')
+        const pWidth = parseFloat(pillar.style.width || '300')
+        const cx = pLeft * scaleX
+        const baseY = pHeight * scaleY
+
+        // Draw layered glow (matching CSS layers)
+        const layers = [
+          { width: pWidth, alpha: 0.06, blur: 20 },
+          { width: pWidth * 0.33, alpha: 0.2, blur: 10 },
+          { width: pWidth * 0.12, alpha: 0.85, blur: 3 },
+          { width: pWidth * 0.04, alpha: 0.92, blur: 1 },
+          { width: pWidth * 0.013, alpha: 1.0, blur: 0 },
+        ]
+
+        for (const layer of layers) {
+          const lw = layer.width * scaleX
+          const grad = ctx.createLinearGradient(0, 0, 0, baseY)
+          grad.addColorStop(0, `rgba(255,255,255,0)`)
+          grad.addColorStop(0.2, `rgba(255,255,255,${layer.alpha * 0.3})`)
+          grad.addColorStop(0.5, `rgba(255,255,255,${layer.alpha * 0.7})`)
+          grad.addColorStop(1.0, `rgba(255,255,253,${layer.alpha})`)
+
+          ctx.save()
+          if (layer.blur > 0) ctx.filter = `blur(${layer.blur * scaleX * 0.5}px)`
+          ctx.fillStyle = grad
+          ctx.fillRect(cx - lw / 2, 0, lw, baseY)
+          ctx.restore()
+        }
+
+        // Ground glow
+        const glowR = 175 * scaleX
+        const groundGrad = ctx.createRadialGradient(cx, baseY, 0, cx, baseY, glowR)
+        groundGrad.addColorStop(0, 'rgba(255,255,250,0.22)')
+        groundGrad.addColorStop(1, 'rgba(255,255,250,0)')
+        ctx.save()
+        ctx.filter = `blur(${15 * scaleX * 0.5}px)`
+        ctx.fillStyle = groundGrad
+        ctx.fillRect(cx - glowR, baseY - glowR, glowR * 2, glowR * 2)
+        ctx.restore()
+      }
+
+      // Export
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        out.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
+      })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -83,7 +150,7 @@ export default function App() {
     } finally {
       setSaving(false)
     }
-  }, [label])
+  }, [label, coords])
 
   // All UI is rendered as fixed overlays with pointer-events:none
   // Only interactive elements (buttons, inputs) get pointer-events:auto
