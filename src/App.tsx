@@ -250,8 +250,10 @@ export default function App() {
             </div>
           )}
           {poem && (
-            <div style={{ pointerEvents: 'none', padding: '12px 16px', borderRadius: 8, maxWidth: 320, textAlign: 'right', background: 'rgba(10,10,10,0.75)', backdropFilter: 'blur(10px)', color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.8, fontWeight: 300, letterSpacing: 0.5 }}>
-              {poem}
+            <div style={{ pointerEvents: 'none', padding: '14px 18px', borderRadius: 8, maxWidth: 340, textAlign: 'right', background: 'rgba(10,10,10,0.75)', backdropFilter: 'blur(12px)', color: 'rgba(255,255,255,0.88)', fontSize: 14, lineHeight: 2.0, fontWeight: 300, letterSpacing: 0.8, fontFamily: "'Noto Sans JP', sans-serif" }}>
+              {poem.split('。').filter(s => s.trim()).map((s, i, arr) => (
+                <span key={i}>{s}{i < arr.length - 1 ? '。' : ''}{i < arr.length - 1 && <br />}</span>
+              ))}
             </div>
           )}
           <div style={{ display: 'flex', gap: 8 }}>
