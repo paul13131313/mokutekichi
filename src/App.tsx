@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import CesiumView, { captureScreenshot } from './components/CesiumView'
 import SearchForm from './components/SearchForm'
+import LightPillar from './components/LightPillar'
 
 export default function App() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -46,6 +47,9 @@ export default function App() {
           lng={coords?.lng ?? 0}
         />
       </div>
+
+      {/* Light Pillar — CSS overlay, completely independent from Cesium */}
+      <LightPillar visible={!!coords} />
 
       {/* Search Form — bottom overlay, collapses after search */}
       <SearchForm onSearch={handleSearch} loading={loading} hasResult={!!coords} />
