@@ -17,9 +17,9 @@ interface Props {
   onScreenPos?: (x: number, y: number) => void
 }
 
-const CAMERA_DISTANCE_SOUTH = 600
-const CAMERA_ALTITUDE = 400
-const CAMERA_PITCH = -40
+const CAMERA_DISTANCE_SOUTH = 900
+const CAMERA_ALTITUDE = 550
+const CAMERA_PITCH = -30
 
 const CesiumView = forwardRef<HTMLDivElement, Props>(({ lat, lng, onScreenPos }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
