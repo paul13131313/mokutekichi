@@ -7,7 +7,6 @@ export default function App() {
   const [label, setLabel] = useState('')
   const [poem, setPoem] = useState('')
   const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
   const pillarRef = useRef<HTMLDivElement>(null)
   const groundGlowRef = useRef<HTMLDivElement>(null)
   const [query, setQuery] = useState('')
@@ -60,9 +59,8 @@ export default function App() {
   const handleSave = useCallback(async () => {
     const container = cesiumRef.current
     if (!container) return
-    setSaving(true)
-    await new Promise(r => setTimeout(r, 500))
     try {
+      // キャプチャ前にstateを変更しない（再レンダリングでカメラが動くのを防ぐ）
       const cesiumCanvas = container.querySelector('canvas')
       if (!cesiumCanvas) throw new Error('Canvas not found')
 
@@ -175,10 +173,8 @@ export default function App() {
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error(err)
-    } finally {
-      setSaving(false)
     }
-  }, [label, coords])
+  }, [label, coords, poem])
 
   // All UI is rendered as fixed overlays with pointer-events:none
   // Only interactive elements (buttons, inputs) get pointer-events:auto
@@ -304,10 +300,9 @@ export default function App() {
           </button>
           <button
             onClick={handleSave}
-            disabled={saving}
-            style={{ pointerEvents: 'auto', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: 'rgba(10,10,10,0.7)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', opacity: saving ? 0.5 : 1 }}
+            style={{ pointerEvents: 'auto', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: 'rgba(10,10,10,0.7)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
           >
-            {saving ? '保存中...' : '📷 画像を保存'}
+            📷 画像を保存
           </button>
         </div>
       )}
