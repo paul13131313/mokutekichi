@@ -61,126 +61,37 @@ export default function App() {
   }, [query])
 
   const handleSave = useCallback(async () => {
-    const container = cesiumRef.current
-    if (!container) return
     try {
-      // キャプチャ前にstateを変更しない（再レンダリングでカメラが動くのを防ぐ）
-      const cesiumCanvas = container.querySelector('canvas')
-      if (!cesiumCanvas) throw new Error('Canvas not found')
+      const html2canvas = (await import('html2canvas')).default
+      // 保存ボタンと検索ボタンを一時的に非表示
+      const btns = document.getElementById('action-buttons')
+      const search = document.getElementById('search-bar')
+      if (btns) btns.style.display = 'none'
+      if (search) search.style.display = 'none'
 
-      const w = cesiumCanvas.width
-      const h = cesiumCanvas.height
-
-      // Composite canvas: Cesium + light pillar
-      const out = document.createElement('canvas')
-      out.width = w
-      out.height = h
-      const ctx = out.getContext('2d')!
-
-      // 1. Draw Cesium scene
-      ctx.drawImage(cesiumCanvas, 0, 0)
-
-      // 2. Draw light pillar on top
-      const pillar = pillarRef.current
-      if (pillar && coords) {
-        const rect = cesiumCanvas.getBoundingClientRect()
-        const scaleX = w / rect.width
-        const scaleY = h / rect.height
-
-        const pLeft = parseFloat(pillar.style.left || '0')
-        const pHeight = parseFloat(pillar.style.height || '0')
-        const pWidth = parseFloat(pillar.style.width || '300')
-        const cx = pLeft * scaleX
-        const baseY = pHeight * scaleY
-
-        // Draw layered glow (matching CSS layers)
-        const layers = [
-          { width: pWidth, alpha: 0.06, blur: 20 },
-          { width: pWidth * 0.33, alpha: 0.2, blur: 10 },
-          { width: pWidth * 0.12, alpha: 0.85, blur: 3 },
-          { width: pWidth * 0.04, alpha: 0.92, blur: 1 },
-          { width: pWidth * 0.013, alpha: 1.0, blur: 0 },
-        ]
-
-        for (const layer of layers) {
-          const lw = layer.width * scaleX
-          const grad = ctx.createLinearGradient(0, 0, 0, baseY)
-          grad.addColorStop(0, `rgba(255,255,255,0)`)
-          grad.addColorStop(0.2, `rgba(255,255,255,${layer.alpha * 0.3})`)
-          grad.addColorStop(0.5, `rgba(255,255,255,${layer.alpha * 0.7})`)
-          grad.addColorStop(1.0, `rgba(255,255,253,${layer.alpha})`)
-
-          ctx.save()
-          if (layer.blur > 0) ctx.filter = `blur(${layer.blur * scaleX * 0.5}px)`
-          ctx.fillStyle = grad
-          ctx.fillRect(cx - lw / 2, 0, lw, baseY)
-          ctx.restore()
-        }
-
-        // Ground glow
-        const glowR = 175 * scaleX
-        const groundGrad = ctx.createRadialGradient(cx, baseY, 0, cx, baseY, glowR)
-        groundGrad.addColorStop(0, 'rgba(255,255,250,0.22)')
-        groundGrad.addColorStop(1, 'rgba(255,255,250,0)')
-        ctx.save()
-        ctx.filter = `blur(${15 * scaleX * 0.5}px)`
-        ctx.fillStyle = groundGrad
-        ctx.fillRect(cx - glowR, baseY - glowR, glowR * 2, glowR * 2)
-        ctx.restore()
-      }
-
-      // 3. Draw poem text (left side, away from pillar)
-      if (poem) {
-        const rect = cesiumCanvas.getBoundingClientRect()
-        const scaleX = w / rect.width
-        const poemFontSize = Math.round(24 * scaleX)
-        const poemLines = poem.split('、').map((s, i, arr) =>
-          s.trim() + (i < arr.length - 1 ? '、' : '')
-        )
-        ctx.save()
-        ctx.font = `400 ${poemFontSize}px 'Noto Serif JP', serif`
-        ctx.fillStyle = '#FFFFFF'
-        ctx.shadowColor = 'rgba(0,0,0,0.8)'
-        ctx.shadowBlur = 16 * scaleX
-        ctx.textAlign = 'left'
-        const x = 40 * scaleX
-        let y = 56 * scaleX
-        for (const line of poemLines) {
-          ctx.fillText(line, x, y + poemFontSize)
-          y += poemFontSize * 1.6
-        }
-        ctx.restore()
-      }
-
-      // 4. Draw address label (bottom left)
-      if (label) {
-        const rect = cesiumCanvas.getBoundingClientRect()
-        const scaleX = w / rect.width
-        const labelFontSize = Math.round(11 * scaleX)
-        ctx.save()
-        ctx.font = `300 ${labelFontSize}px 'Noto Sans JP', sans-serif`
-        ctx.fillStyle = 'rgba(255,255,255,0.5)'
-        ctx.shadowColor = 'rgba(0,0,0,0.8)'
-        ctx.shadowBlur = 8 * scaleX
-        ctx.textAlign = 'left'
-        ctx.fillText(label, 24 * scaleX, h - 40 * scaleX)
-        ctx.restore()
-      }
-
-      // Export
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        out.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
+      const canvas = await html2canvas(document.body, {
+        useCORS: true,
+        scale: 2,
+        backgroundColor: '#0a0a0a',
       })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `mokutekichi-${label || 'capture'}.png`
-      a.click()
-      URL.revokeObjectURL(url)
+
+      // ボタンを元に戻す
+      if (btns) btns.style.display = ''
+      if (search) search.style.display = ''
+
+      canvas.toBlob((blob) => {
+        if (!blob) return
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `mokutekichi-${label || 'capture'}.png`
+        a.click()
+        URL.revokeObjectURL(url)
+      }, 'image/png')
     } catch (err) {
       console.error(err)
     }
-  }, [label, coords, poem])
+  }, [label])
 
   // All UI is rendered as fixed overlays with pointer-events:none
   // Only interactive elements (buttons, inputs) get pointer-events:auto
@@ -228,7 +139,7 @@ export default function App() {
       </div>
 
       {/* Search form */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20, pointerEvents: 'none', padding: collapsed ? 0 : 16 }}>
+      <div id="search-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20, pointerEvents: 'none', padding: collapsed ? 0 : 16 }}>
         {collapsed ? (
           <div style={{ textAlign: 'center', paddingBottom: 24 }}>
             <button
@@ -297,7 +208,7 @@ export default function App() {
 
       {/* Action buttons — bottom right */}
       {coords && (
-        <div style={{ position: 'fixed', bottom: 80, right: 24, zIndex: 20, pointerEvents: 'none', display: 'flex', gap: 8 }}>
+        <div id="action-buttons" style={{ position: 'fixed', bottom: 80, right: 24, zIndex: 20, pointerEvents: 'none', display: 'flex', gap: 8 }}>
           <button
             onClick={() => {
               const el = cesiumRef.current as HTMLDivElement & { recenter?: () => void }
