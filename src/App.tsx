@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 import CesiumView from './components/CesiumView'
+import { getPoem } from './data/poems'
 
 // Start loading Maps SDK immediately at module load (not inside component)
 const geocoderPromise: Promise<google.maps.Geocoder> = (() => {
@@ -13,6 +14,7 @@ const geocoderPromise: Promise<google.maps.Geocoder> = (() => {
 export default function App() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [label, setLabel] = useState('')
+  const [poem, setPoem] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const pillarRef = useRef<HTMLDivElement>(null)
@@ -43,6 +45,7 @@ export default function App() {
       if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90) {
         setCoords({ lat, lng })
         setLabel(`${lat}, ${lng}`)
+        setPoem(getPoem(`${lat}, ${lng}`))
         setCollapsed(true)
         setLoading(true)
         setTimeout(() => setLoading(false), 2000)
@@ -59,6 +62,7 @@ export default function App() {
       const r = res.results[0]
       setCoords({ lat: r.geometry.location.lat(), lng: r.geometry.location.lng() })
       setLabel(r.formatted_address)
+      setPoem(getPoem(r.formatted_address))
       setCollapsed(true)
       setLoading(true)
       setTimeout(() => setLoading(false), 2000)
@@ -213,7 +217,7 @@ export default function App() {
         ) : (
           <div style={{ maxWidth: 560, margin: '0 auto', borderRadius: 16, padding: 20, background: 'rgba(10,10,10,0.88)', backdropFilter: 'blur(20px)', pointerEvents: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ color: '#00BFFF', fontSize: 14, fontWeight: 300, letterSpacing: 1 }}>目的地という<ruby>光景<rp>(</rp><rt style={{ fontSize: 8, letterSpacing: 2 }}>シンボル</rt><rp>)</rp></ruby></span>
+              <span style={{ color: '#00BFFF', fontSize: 14, fontWeight: 300, letterSpacing: 1 }}>マンションポエムメーカー</span>
               <span style={{ fontSize: 10, opacity: 0.25 }}>v2.3</span>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch() }} style={{ display: 'flex', gap: 8 }}>
@@ -244,6 +248,11 @@ export default function App() {
             <div style={{ pointerEvents: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, maxWidth: 280, textAlign: 'right', background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(10px)', color: '#00BFFF' }}>
               {label}
             </div>
+            {poem && (
+              <div style={{ pointerEvents: 'none', padding: '12px 16px', borderRadius: 8, maxWidth: 320, textAlign: 'right', background: 'rgba(10,10,10,0.75)', backdropFilter: 'blur(10px)', color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.8, fontWeight: 300, letterSpacing: 0.5 }}>
+                {poem}
+              </div>
+            )}
           )}
           <div style={{ display: 'flex', gap: 8 }}>
             <button
