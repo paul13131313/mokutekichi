@@ -14,6 +14,7 @@ import '@cesium/widgets/Source/widgets.css'
 interface Props {
   lat: number
   lng: number
+  onScreenPosition?: (x: number) => void
 }
 
 const CAMERA_DISTANCE_SOUTH = 800
@@ -21,7 +22,7 @@ const CAMERA_ALTITUDE = 500
 const CAMERA_PITCH = -35
 
 
-export default function CesiumView({ lat, lng }: Props) {
+export default function CesiumView({ lat, lng, onScreenPosition }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<Viewer | null>(null)
 
@@ -97,12 +98,12 @@ export default function CesiumView({ lat, lng }: Props) {
           in vec2 v_textureCoordinates;
           void main() {
             vec4 color = texture(colorTexture, v_textureCoordinates);
-            // Darken to 25%
-            vec3 night = color.rgb * 0.25;
-            // Blue tint
-            night.r *= 0.75;
-            night.b *= 1.35;
-            night += vec3(0.008, 0.012, 0.035);
+            // Darken to 22%
+            vec3 night = color.rgb * 0.22;
+            // Very subtle blue, mostly black
+            night.r *= 0.9;
+            night.b *= 1.08;
+            night += vec3(0.003, 0.005, 0.012);
             out_FragColor = vec4(night, color.a);
           }
         `,
@@ -121,6 +122,19 @@ export default function CesiumView({ lat, lng }: Props) {
         0
       ),
     })
+
+    // Calculate screen X position of target and report it
+    if (onScreenPosition) {
+      setTimeout(() => {
+        const targetPos = Cartesian3.fromDegrees(lng, lat, 0)
+        const screenPos = viewer.scene.cartesianToCanvasCoordinates(targetPos)
+        if (screenPos) {
+          const canvas = viewer.scene.canvas
+          const xPercent = (screenPos.x / canvas.width) * 100
+          onScreenPosition(xPercent)
+        }
+      }, 500)
+    }
   }, [lat, lng])
 
   return (

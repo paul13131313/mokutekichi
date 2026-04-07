@@ -8,6 +8,7 @@ export default function App() {
   const [label, setLabel] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [pillarX, setPillarX] = useState(50)
   const cesiumContainerRef = useRef<HTMLDivElement>(null)
 
   const handleSearch = useCallback((lat: number, lng: number, newLabel: string) => {
@@ -45,11 +46,12 @@ export default function App() {
         <CesiumView
           lat={coords?.lat ?? 0}
           lng={coords?.lng ?? 0}
+          onScreenPosition={setPillarX}
         />
       </div>
 
       {/* Light Pillar — CSS overlay, completely independent from Cesium */}
-      <LightPillar visible={!!coords} />
+      <LightPillar visible={!!coords} xPercent={pillarX} />
 
       {/* Search Form — bottom overlay, collapses after search */}
       <SearchForm onSearch={handleSearch} loading={loading} hasResult={!!coords} />
