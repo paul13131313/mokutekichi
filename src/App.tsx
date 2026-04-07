@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import CesiumView, { captureScreenshot } from './components/CesiumView'
+import CesiumView from './components/CesiumView'
 
 export default function App() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
