@@ -62,24 +62,85 @@ export default function App() {
 
   const handleSave = useCallback(async () => {
     try {
+      const container = cesiumRef.current
+      if (!container) return
+      const cesiumCanvas = container.querySelector('canvas')
+      if (!cesiumCanvas) return
+
+      const w = cesiumCanvas.width
+      const h = cesiumCanvas.height
+      const out = document.createElement('canvas')
+      out.width = w
+      out.height = h
+      const ctx = out.getContext('2d')!
+
+      // 1. Cesium scene
+      ctx.drawImage(cesiumCanvas, 0, 0)
+
+      // 2. Light pillar (Canvas2D with blur filter)
+      const pillar = pillarRef.current
+      if (pillar && coords) {
+        const rect = cesiumCanvas.getBoundingClientRect()
+        const sx = w / rect.width
+        const sy = h / rect.height
+        const cx = parseFloat(pillar.style.left || '0') * sx
+        const baseY = parseFloat(pillar.style.height || '0') * sy
+        const pw = parseFloat(pillar.style.width || '300') * sx
+
+        const layers = [
+          { w: pw, alpha: 0.06, blur: 20 },
+          { w: pw * 0.33, alpha: 0.2, blur: 10 },
+          { w: pw * 0.12, alpha: 0.9, blur: 3 },
+          { w: pw * 0.04, alpha: 0.92, blur: 1 },
+          { w: pw * 0.013, alpha: 1.0, blur: 0 },
+        ]
+        for (const l of layers) {
+          const grad = ctx.createLinearGradient(0, 0, 0, baseY)
+          grad.addColorStop(0, `rgba(255,255,255,0)`)
+          grad.addColorStop(0.15, `rgba(255,255,255,${l.alpha * 0.2})`)
+          grad.addColorStop(0.5, `rgba(255,255,255,${l.alpha * 0.6})`)
+          grad.addColorStop(1.0, `rgba(255,255,253,${l.alpha})`)
+          ctx.save()
+          if (l.blur > 0) ctx.filter = `blur(${l.blur * sx}px)`
+          ctx.fillStyle = grad
+          ctx.fillRect(cx - l.w / 2, 0, l.w, baseY)
+          ctx.restore()
+        }
+        // Ground glow
+        const gr = 175 * sx
+        const gg = ctx.createRadialGradient(cx, baseY, 0, cx, baseY, gr)
+        gg.addColorStop(0, 'rgba(255,255,250,0.22)')
+        gg.addColorStop(1, 'rgba(255,255,250,0)')
+        ctx.save()
+        ctx.filter = `blur(${15 * sx}px)`
+        ctx.fillStyle = gg
+        ctx.fillRect(cx - gr, baseY - gr, gr * 2, gr * 2)
+        ctx.restore()
+      }
+
+      // 3. Poem + address via html2canvas overlay
       const html2canvas = (await import('html2canvas')).default
-      // 保存ボタンと検索ボタンを一時的に非表示
       const btns = document.getElementById('action-buttons')
       const search = document.getElementById('search-bar')
+      const lightDiv = pillarRef.current?.parentElement
       if (btns) btns.style.display = 'none'
       if (search) search.style.display = 'none'
+      if (lightDiv) lightDiv.style.display = 'none'
 
-      const canvas = await html2canvas(document.body, {
+      const overlayCanvas = await html2canvas(document.body, {
         useCORS: true,
         scale: 2,
-        backgroundColor: '#0a0a0a',
+        backgroundColor: null,
       })
 
-      // ボタンを元に戻す
       if (btns) btns.style.display = ''
       if (search) search.style.display = ''
+      if (lightDiv) lightDiv.style.display = ''
 
-      canvas.toBlob((blob) => {
+      // Composite: draw text overlay on top
+      ctx.drawImage(overlayCanvas, 0, 0, w, h)
+
+      out.toBlob((blob) => {
         if (!blob) return
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -153,7 +214,7 @@ export default function App() {
           <div style={{ maxWidth: 560, margin: '0 auto', borderRadius: 16, padding: 20, background: 'rgba(10,10,10,0.88)', backdropFilter: 'blur(20px)', pointerEvents: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ color: '#00BFFF', fontSize: 14, fontWeight: 300, letterSpacing: 1 }}>マンションポエムメーカー</span>
-              <span style={{ fontSize: 10, opacity: 0.25 }}>v4.1</span>
+              <span style={{ fontSize: 10, opacity: 0.25 }}>v4.2</span>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch() }} style={{ display: 'flex', gap: 8 }}>
               <input
