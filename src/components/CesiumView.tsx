@@ -114,7 +114,8 @@ export default function CesiumView({ lat, lng, onScreenPos }: Props) {
     })
 
     // Track screen position of target every frame
-    const targetCartesian = Cartesian3.fromDegrees(lng, lat, 0)
+    // 地面レベル（建物の足元）で追跡。3D Tilesの建物の高さ分を考慮して少し上げる
+    const targetCartesian = Cartesian3.fromDegrees(lng, lat, 30)
     const listener = viewer.scene.postRender.addEventListener(() => {
       if (!onScreenPos) return
       const screenPos = viewer.scene.cartesianToCanvasCoordinates(targetCartesian)
