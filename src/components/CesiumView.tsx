@@ -8,6 +8,7 @@ import {
   ColorMaterialProperty,
   Cesium3DTileset,
   Resource,
+  PostProcessStage,
 } from 'cesium'
 import '@cesium/widgets/Source/widgets.css'
 
@@ -89,47 +90,110 @@ export default function CesiumView({ lat, lng }: Props) {
 
     viewer.entities.removeAll()
 
-    // Outer pillar (cyan, semi-transparent)
     const position = Cartesian3.fromDegrees(lng, lat, PILLAR_HEIGHT / 2)
+
+    // Layer 1: Wide outer glow (soft cyan)
     viewer.entities.add({
       position,
       cylinder: {
         length: PILLAR_HEIGHT,
-        topRadius: PILLAR_RADIUS * 0.3,
-        bottomRadius: PILLAR_RADIUS,
+        topRadius: PILLAR_RADIUS * 0.8,
+        bottomRadius: PILLAR_RADIUS * 2.5,
         material: new ColorMaterialProperty(
-          Color.fromCssColorString('#00BFFF').withAlpha(0.5)
+          Color.fromCssColorString('#00BFFF').withAlpha(0.15)
         ),
         outline: false,
       },
     })
 
-    // Inner glow pillar (white)
+    // Layer 2: Mid glow (bright cyan-white)
     viewer.entities.add({
       position,
       cylinder: {
         length: PILLAR_HEIGHT,
-        topRadius: PILLAR_RADIUS * 0.1,
-        bottomRadius: PILLAR_RADIUS * 0.5,
+        topRadius: PILLAR_RADIUS * 0.4,
+        bottomRadius: PILLAR_RADIUS * 1.2,
         material: new ColorMaterialProperty(
-          Color.fromCssColorString('#FFFFFF').withAlpha(0.35)
+          Color.fromCssColorString('#80DFFF').withAlpha(0.45)
         ),
         outline: false,
       },
     })
 
-    // Ground glow circle
+    // Layer 3: Bright core (white, high opacity)
+    viewer.entities.add({
+      position,
+      cylinder: {
+        length: PILLAR_HEIGHT,
+        topRadius: PILLAR_RADIUS * 0.15,
+        bottomRadius: PILLAR_RADIUS * 0.6,
+        material: new ColorMaterialProperty(
+          Color.fromCssColorString('#FFFFFF').withAlpha(0.85)
+        ),
+        outline: false,
+      },
+    })
+
+    // Layer 4: Ultra-bright inner core (pure white)
+    viewer.entities.add({
+      position,
+      cylinder: {
+        length: PILLAR_HEIGHT,
+        topRadius: PILLAR_RADIUS * 0.05,
+        bottomRadius: PILLAR_RADIUS * 0.25,
+        material: new ColorMaterialProperty(
+          Color.WHITE.withAlpha(0.95)
+        ),
+        outline: false,
+      },
+    })
+
+    // Ground glow (wide, soft)
     viewer.entities.add({
       position: Cartesian3.fromDegrees(lng, lat, 2),
       ellipse: {
-        semiMinorAxis: 60,
-        semiMajorAxis: 60,
+        semiMinorAxis: 120,
+        semiMajorAxis: 120,
         material: new ColorMaterialProperty(
-          Color.fromCssColorString('#00BFFF').withAlpha(0.3)
+          Color.fromCssColorString('#00BFFF').withAlpha(0.2)
         ),
         height: 1,
       },
     })
+
+    // Ground glow (inner, bright)
+    viewer.entities.add({
+      position: Cartesian3.fromDegrees(lng, lat, 3),
+      ellipse: {
+        semiMinorAxis: 40,
+        semiMajorAxis: 40,
+        material: new ColorMaterialProperty(
+          Color.WHITE.withAlpha(0.4)
+        ),
+        height: 2,
+      },
+    })
+
+    // Darken surroundings via post-process brightness/contrast
+    const stages = viewer.scene.postProcessStages
+    // Remove any existing custom stages
+    stages.removeAll()
+    stages.add(
+      new PostProcessStage({
+        fragmentShader: `
+          uniform sampler2D colorTexture;
+          in vec2 v_textureCoordinates;
+          void main() {
+            vec4 color = texture(colorTexture, v_textureCoordinates);
+            // Darken: reduce brightness to 60%, then boost contrast slightly
+            vec3 darkened = color.rgb * 0.6;
+            // Increase contrast around highlights to make bright things pop
+            vec3 contrasted = (darkened - 0.3) * 1.4 + 0.3;
+            out_FragColor = vec4(max(contrasted, vec3(0.0)), color.a);
+          }
+        `,
+      })
+    )
 
     // Camera: south of target, looking north-up
     const targetLat = lat - (CAMERA_DISTANCE_SOUTH / 111320)
