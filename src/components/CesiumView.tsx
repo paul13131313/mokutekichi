@@ -188,7 +188,7 @@ export default function CesiumView({ lat, lng }: Props) {
       },
     })
 
-    // PostProcess: darken dark areas (night), boost bright areas (glow)
+    // PostProcess: night + glow
     const stages = viewer.scene.postProcessStages
     stages.removeAll()
     stages.add(
@@ -200,26 +200,20 @@ export default function CesiumView({ lat, lng }: Props) {
             vec4 color = texture(colorTexture, v_textureCoordinates);
             float luminance = dot(color.rgb, vec3(0.299, 0.587, 0.114));
 
-            // Dark areas: crush to near-black (night effect)
-            // Bright areas: boost to white (glow effect)
-            float darkFactor = 0.25; // how dark the shadows get
-            float glowThreshold = 0.35;
-            float glowBoost = 2.5;
+            // Only the light pillar entities are truly bright (lum > 0.85)
+            // Everything else gets darkened to night
+            float glowThreshold = 0.85;
 
-            if (luminance > glowThreshold) {
-              // Bright pixel: boost toward white
-              float t = smoothstep(glowThreshold, 0.8, luminance);
-              vec3 boosted = mix(color.rgb, vec3(1.0), t * 0.7);
-              out_FragColor = vec4(boosted * glowBoost, color.a);
-              out_FragColor = vec4(min(out_FragColor.rgb, vec3(1.0)), color.a);
-            } else {
-              // Dark pixel: crush to night
-              float t = luminance / glowThreshold;
-              vec3 darkened = color.rgb * darkFactor * t;
-              // Slight blue tint for night atmosphere
-              darkened += vec3(0.0, 0.005, 0.015) * (1.0 - t);
-              out_FragColor = vec4(darkened, color.a);
-            }
+            // Step 1: Darken everything
+            vec3 night = color.rgb * 0.3;
+            // Add subtle blue tint
+            night += vec3(0.005, 0.01, 0.025);
+
+            // Step 2: If very bright, blend back toward original boosted white
+            float t = smoothstep(glowThreshold, 1.0, luminance);
+            vec3 glow = mix(night, vec3(1.0), t);
+
+            out_FragColor = vec4(glow, color.a);
           }
         `,
       })
