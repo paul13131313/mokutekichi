@@ -91,104 +91,127 @@ export default function CesiumView({ lat, lng }: Props) {
     viewer.entities.removeAll()
 
     const position = Cartesian3.fromDegrees(lng, lat, PILLAR_HEIGHT / 2)
+    // Warm white with a hint of lemon: #FFFEF0
+    const warmWhite = Color.fromCssColorString('#FFFEF0')
 
-    // Layer 1: Very wide soft haze (white, subtle)
+    // Layer 1: Ultra-wide atmospheric haze
+    viewer.entities.add({
+      position,
+      cylinder: {
+        length: PILLAR_HEIGHT * 1.2,
+        topRadius: PILLAR_RADIUS * 6,
+        bottomRadius: PILLAR_RADIUS * 10,
+        material: new ColorMaterialProperty(warmWhite.withAlpha(0.04)),
+        outline: false,
+      },
+    })
+
+    // Layer 2: Wide soft glow
     viewer.entities.add({
       position,
       cylinder: {
         length: PILLAR_HEIGHT * 1.1,
-        topRadius: PILLAR_RADIUS * 3,
-        bottomRadius: PILLAR_RADIUS * 5,
-        material: new ColorMaterialProperty(
-          Color.WHITE.withAlpha(0.06)
-        ),
+        topRadius: PILLAR_RADIUS * 4,
+        bottomRadius: PILLAR_RADIUS * 7,
+        material: new ColorMaterialProperty(warmWhite.withAlpha(0.07)),
         outline: false,
       },
     })
 
-    // Layer 2: Wide outer glow (warm white)
+    // Layer 3: Mid-wide glow
     viewer.entities.add({
       position,
       cylinder: {
         length: PILLAR_HEIGHT,
-        topRadius: PILLAR_RADIUS * 1.5,
-        bottomRadius: PILLAR_RADIUS * 3,
-        material: new ColorMaterialProperty(
-          Color.fromCssColorString('#E8F4FF').withAlpha(0.15)
-        ),
+        topRadius: PILLAR_RADIUS * 2,
+        bottomRadius: PILLAR_RADIUS * 4,
+        material: new ColorMaterialProperty(warmWhite.withAlpha(0.12)),
         outline: false,
       },
     })
 
-    // Layer 3: Mid glow (bright white)
+    // Layer 4: Mid glow
     viewer.entities.add({
       position,
       cylinder: {
         length: PILLAR_HEIGHT,
-        topRadius: PILLAR_RADIUS * 0.6,
-        bottomRadius: PILLAR_RADIUS * 1.5,
-        material: new ColorMaterialProperty(
-          Color.WHITE.withAlpha(0.4)
-        ),
+        topRadius: PILLAR_RADIUS * 1,
+        bottomRadius: PILLAR_RADIUS * 2.2,
+        material: new ColorMaterialProperty(Color.WHITE.withAlpha(0.25)),
         outline: false,
       },
     })
 
-    // Layer 4: Bright core (pure white, high opacity)
+    // Layer 5: Bright body
     viewer.entities.add({
       position,
       cylinder: {
         length: PILLAR_HEIGHT,
-        topRadius: PILLAR_RADIUS * 0.2,
-        bottomRadius: PILLAR_RADIUS * 0.7,
-        material: new ColorMaterialProperty(
-          Color.WHITE.withAlpha(0.8)
-        ),
+        topRadius: PILLAR_RADIUS * 0.4,
+        bottomRadius: PILLAR_RADIUS * 1.0,
+        material: new ColorMaterialProperty(Color.WHITE.withAlpha(0.55)),
         outline: false,
       },
     })
 
-    // Layer 5: Ultra-bright inner core
+    // Layer 6: Hot core
     viewer.entities.add({
       position,
       cylinder: {
         length: PILLAR_HEIGHT,
-        topRadius: PILLAR_RADIUS * 0.05,
-        bottomRadius: PILLAR_RADIUS * 0.3,
-        material: new ColorMaterialProperty(
-          Color.WHITE.withAlpha(0.95)
-        ),
+        topRadius: PILLAR_RADIUS * 0.12,
+        bottomRadius: PILLAR_RADIUS * 0.5,
+        material: new ColorMaterialProperty(Color.WHITE.withAlpha(0.85)),
         outline: false,
       },
     })
 
-    // Ground glow (wide haze)
+    // Layer 7: Burning center
+    viewer.entities.add({
+      position,
+      cylinder: {
+        length: PILLAR_HEIGHT,
+        topRadius: PILLAR_RADIUS * 0.03,
+        bottomRadius: PILLAR_RADIUS * 0.2,
+        material: new ColorMaterialProperty(Color.WHITE.withAlpha(0.98)),
+        outline: false,
+      },
+    })
+
+    // Ground haze (very wide)
     viewer.entities.add({
       position: Cartesian3.fromDegrees(lng, lat, 2),
       ellipse: {
-        semiMinorAxis: 200,
-        semiMajorAxis: 200,
-        material: new ColorMaterialProperty(
-          Color.WHITE.withAlpha(0.08)
-        ),
+        semiMinorAxis: 300,
+        semiMajorAxis: 300,
+        material: new ColorMaterialProperty(warmWhite.withAlpha(0.05)),
         height: 1,
       },
     })
 
-    // Ground glow (inner bright)
+    // Ground glow (mid)
     viewer.entities.add({
       position: Cartesian3.fromDegrees(lng, lat, 3),
       ellipse: {
-        semiMinorAxis: 60,
-        semiMajorAxis: 60,
-        material: new ColorMaterialProperty(
-          Color.WHITE.withAlpha(0.35)
-        ),
+        semiMinorAxis: 100,
+        semiMajorAxis: 100,
+        material: new ColorMaterialProperty(Color.WHITE.withAlpha(0.18)),
         height: 2,
       },
     })
 
-    // PostProcess: night + glow
+    // Ground glow (inner hot)
+    viewer.entities.add({
+      position: Cartesian3.fromDegrees(lng, lat, 4),
+      ellipse: {
+        semiMinorAxis: 35,
+        semiMajorAxis: 35,
+        material: new ColorMaterialProperty(Color.WHITE.withAlpha(0.5)),
+        height: 3,
+      },
+    })
+
+    // PostProcess: blue-tinted night + white glow boost
     const stages = viewer.scene.postProcessStages
     stages.removeAll()
     stages.add(
@@ -198,22 +221,22 @@ export default function CesiumView({ lat, lng }: Props) {
           in vec2 v_textureCoordinates;
           void main() {
             vec4 color = texture(colorTexture, v_textureCoordinates);
-            float luminance = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+            float lum = dot(color.rgb, vec3(0.299, 0.587, 0.114));
 
-            // Only the light pillar entities are truly bright (lum > 0.85)
-            // Everything else gets darkened to night
-            float glowThreshold = 0.85;
+            // Night: darken + blue tint
+            vec3 night = color.rgb * 0.25;
+            night.r *= 0.8;  // reduce red
+            night.b *= 1.3;  // boost blue
+            night += vec3(0.01, 0.015, 0.04); // blue ambient
 
-            // Step 1: Darken everything
-            vec3 night = color.rgb * 0.3;
-            // Add subtle blue tint
-            night += vec3(0.005, 0.01, 0.025);
+            // Glow: smoothly transition from night to blazing white
+            // Start transition at lum=0.4, full white at lum=0.9
+            float t = smoothstep(0.4, 0.9, lum);
+            // Warm white target with very slight lemon
+            vec3 glowColor = vec3(1.0, 1.0, 0.96);
+            vec3 result = mix(night, glowColor, t);
 
-            // Step 2: If very bright, blend back toward original boosted white
-            float t = smoothstep(glowThreshold, 1.0, luminance);
-            vec3 glow = mix(night, vec3(1.0), t);
-
-            out_FragColor = vec4(glow, color.a);
+            out_FragColor = vec4(result, color.a);
           }
         `,
       })
