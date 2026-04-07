@@ -104,7 +104,7 @@ export default function SearchForm({ onSearch, loading, hasResult }: Props) {
           >
             目的地という光景
           </h1>
-          <span className="text-[10px] opacity-25">v1.0</span>
+          <span className="text-[10px] opacity-25">v1.1</span>
         </div>
 
         <form onSubmit={handleSubmit} className="flex gap-2">

@@ -1,12 +1,14 @@
 import { useState, useRef, useCallback } from 'react'
 import CesiumView, { captureScreenshot } from './components/CesiumView'
 import SearchForm from './components/SearchForm'
+import LightPillar from './components/LightPillar'
 
 export default function App() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [label, setLabel] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [pillarX, setPillarX] = useState(0)
   const cesiumContainerRef = useRef<HTMLDivElement>(null)
 
   const handleSearch = useCallback((lat: number, lng: number, newLabel: string) => {
@@ -44,13 +46,17 @@ export default function App() {
         <CesiumView
           lat={coords?.lat ?? 0}
           lng={coords?.lng ?? 0}
+          onScreenX={setPillarX}
         />
       </div>
 
-      {/* Search Form — bottom overlay, collapses after search */}
+      {/* Light Pillar — CSS overlay, position tracked from Cesium postRender */}
+      <LightPillar visible={!!coords} xPx={pillarX} />
+
+      {/* Search Form */}
       <SearchForm onSearch={handleSearch} loading={loading} hasResult={!!coords} />
 
-      {/* Location label + Save button — top right */}
+      {/* Save button */}
       {coords && (
         <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-3">
           {label && (
@@ -79,9 +85,7 @@ export default function App() {
 
       {/* Initial state */}
       {!coords && (
-        <div
-          className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none"
-        >
+        <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
           <p className="text-lg opacity-20">住所を入力して光の柱を立てよう</p>
         </div>
       )}
