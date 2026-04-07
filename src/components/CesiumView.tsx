@@ -14,14 +14,14 @@ import '@cesium/widgets/Source/widgets.css'
 interface Props {
   lat: number
   lng: number
-  onScreenX?: (x: number) => void
+  onScreenPos?: (x: number, y: number) => void
 }
 
 const CAMERA_DISTANCE_SOUTH = 800
 const CAMERA_ALTITUDE = 500
 const CAMERA_PITCH = -35
 
-export default function CesiumView({ lat, lng, onScreenX }: Props) {
+export default function CesiumView({ lat, lng, onScreenPos }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<Viewer | null>(null)
   const removeListenerRef = useRef<(() => void) | null>(null)
@@ -116,16 +116,17 @@ export default function CesiumView({ lat, lng, onScreenX }: Props) {
     // Track screen position of target every frame
     const targetCartesian = Cartesian3.fromDegrees(lng, lat, 0)
     const listener = viewer.scene.postRender.addEventListener(() => {
-      if (!onScreenX) return
+      if (!onScreenPos) return
       const screenPos = viewer.scene.cartesianToCanvasCoordinates(targetCartesian)
       if (screenPos) {
         const canvas = viewer.scene.canvas
         const xPx = (screenPos.x / canvas.width) * window.innerWidth
-        onScreenX(xPx)
+        const yPx = (screenPos.y / canvas.height) * window.innerHeight
+        onScreenPos(xPx, yPx)
       }
     })
     removeListenerRef.current = () => listener()
-  }, [lat, lng, onScreenX])
+  }, [lat, lng, onScreenPos])
 
   return (
     <div
