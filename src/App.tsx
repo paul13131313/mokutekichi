@@ -30,7 +30,6 @@ export default function App() {
       setGeoReady(true)
     }).catch(() => {})
   }, [])
-  }
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return
