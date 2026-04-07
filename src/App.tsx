@@ -94,13 +94,24 @@ export default function App() {
         lat={coords?.lat ?? 0}
         lng={coords?.lng ?? 0}
         onScreenPos={(x, y) => {
+          // Scale pillar width based on zoom level (y position as proxy)
+          // y near bottom of screen = zoomed in = wide
+          // y near top or off screen = zoomed out = narrow
+          const vh = window.innerHeight
+          const ratio = Math.max(0, Math.min(1, y / vh))
+          // 3 tiers: close (ratio>0.6) = 1.0, mid (0.3-0.6) = 0.6, far (<0.3) = 0.3
+          const scale = ratio > 0.6 ? 1.0 : ratio > 0.3 ? 0.6 : 0.3
+
           if (pillarRef.current) {
             pillarRef.current.style.left = `${x}px`
             pillarRef.current.style.height = `${y}px`
+            pillarRef.current.style.width = `${300 * scale}px`
+            pillarRef.current.style.transform = `translateX(-50%) scaleX(1)`
           }
           if (groundGlowRef.current) {
             groundGlowRef.current.style.left = `${x}px`
             groundGlowRef.current.style.top = `${y}px`
+            groundGlowRef.current.style.width = `${350 * scale}px`
           }
         }}
       />
