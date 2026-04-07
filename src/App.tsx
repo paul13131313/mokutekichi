@@ -14,6 +14,7 @@ export default function App() {
   const cesiumRef = useRef<HTMLDivElement>(null)
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)
   const geoInitRef = useRef(false)
+  const [geoReady, setGeoReady] = useState(false)
 
   // Init geocoder
   if (!geoInitRef.current) {
@@ -24,6 +25,7 @@ export default function App() {
         setOptions({ key: apiKey, v: 'weekly' })
         importLibrary('geocoding').then((lib) => {
           geocoderRef.current = new lib.Geocoder()
+          setGeoReady(true)
         })
       })
     }
@@ -212,7 +214,7 @@ export default function App() {
           <div style={{ maxWidth: 560, margin: '0 auto', borderRadius: 16, padding: 20, background: 'rgba(10,10,10,0.88)', backdropFilter: 'blur(20px)', pointerEvents: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ color: '#00BFFF', fontSize: 14, fontWeight: 300, letterSpacing: 1 }}>目的地という光景</span>
-              <span style={{ fontSize: 10, opacity: 0.25 }}>v1.9</span>
+              <span style={{ fontSize: 10, opacity: 0.25 }}>v2.3</span>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch() }} style={{ display: 'flex', gap: 8 }}>
               <input
@@ -224,10 +226,10 @@ export default function App() {
               />
               <button
                 type="submit"
-                disabled={loading || !query.trim()}
-                style={{ padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: '#00BFFF', color: '#0a0a0a', border: 'none', opacity: (loading || !query.trim()) ? 0.3 : 1 }}
+                disabled={loading || !query.trim() || !geoReady}
+                style={{ padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: '#00BFFF', color: '#0a0a0a', border: 'none', opacity: (loading || !query.trim() || !geoReady) ? 0.3 : 1 }}
               >
-                {loading ? '...' : '検索'}
+                {loading ? '...' : !geoReady ? '準備中' : '検索'}
               </button>
             </form>
             {error && <p style={{ fontSize: 12, marginTop: 8, textAlign: 'center', color: '#ff6b6b' }}>{error}</p>}
