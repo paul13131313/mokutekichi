@@ -1,4 +1,4 @@
-import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react'
 import {
   Viewer,
   Cartesian3,
@@ -26,7 +26,26 @@ const CesiumView = forwardRef<HTMLDivElement, Props>(({ lat, lng, onScreenPos },
   const viewerRef = useRef<Viewer | null>(null)
   const removeListenerRef = useRef<(() => void) | null>(null)
 
-  useImperativeHandle(ref, () => containerRef.current!)
+  const recenter = useCallback(() => {
+    const viewer = viewerRef.current
+    if (!viewer || !lat || !lng) return
+    const targetLat = lat - (CAMERA_DISTANCE_SOUTH / 111320)
+    viewer.camera.flyTo({
+      destination: Cartesian3.fromDegrees(lng, targetLat, CAMERA_ALTITUDE),
+      orientation: new HeadingPitchRoll(
+        CesiumMath.toRadians(0),
+        CesiumMath.toRadians(CAMERA_PITCH),
+        0
+      ),
+      duration: 1.5,
+    })
+  }, [lat, lng])
+
+  useImperativeHandle(ref, () => {
+    const el = containerRef.current!
+    ;(el as HTMLDivElement & { recenter: () => void }).recenter = recenter
+    return el
+  }, [recenter])
 
   useEffect(() => {
     if (!containerRef.current) return

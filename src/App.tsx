@@ -145,7 +145,7 @@ export default function App() {
           <div style={{ maxWidth: 560, margin: '0 auto', borderRadius: 16, padding: 20, background: 'rgba(10,10,10,0.88)', backdropFilter: 'blur(20px)', pointerEvents: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ color: '#00BFFF', fontSize: 14, fontWeight: 300, letterSpacing: 1 }}>目的地という光景</span>
-              <span style={{ fontSize: 10, opacity: 0.25 }}>v1.7</span>
+              <span style={{ fontSize: 10, opacity: 0.25 }}>v1.9</span>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch() }} style={{ display: 'flex', gap: 8 }}>
               <input
@@ -176,13 +176,24 @@ export default function App() {
               {label}
             </div>
           )}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{ pointerEvents: 'auto', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,191,255,0.4)', color: '#00BFFF', opacity: saving ? 0.5 : 1 }}
-          >
-            {saving ? '保存中...' : '📷 画像を保存'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => {
+                const el = cesiumRef.current as HTMLDivElement & { recenter?: () => void }
+                el?.recenter?.()
+              }}
+              style={{ pointerEvents: 'auto', padding: '10px 16px', borderRadius: 8, fontSize: 14, cursor: 'pointer', background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,191,255,0.4)', color: '#00BFFF' }}
+            >
+              ◎
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{ pointerEvents: 'auto', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,191,255,0.4)', color: '#00BFFF', opacity: saving ? 0.5 : 1 }}
+            >
+              {saving ? '保存中...' : '📷 画像を保存'}
+            </button>
+          </div>
         </div>
       )}
 
