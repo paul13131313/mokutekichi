@@ -83,6 +83,7 @@ export default function SearchForm({ onSearch, loading }: Props) {
         >
           目的地という光景（シンボル）
         </h1>
+        <p className="text-center text-[10px] opacity-25 mb-3">v0.2</p>
 
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
