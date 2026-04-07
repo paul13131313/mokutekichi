@@ -130,8 +130,8 @@ export default function App() {
         const rect = cesiumCanvas.getBoundingClientRect()
         const scaleX = w / rect.width
         const poemFontSize = Math.round(24 * scaleX)
-        const poemLines = poem.split('。').filter(s => s.trim()).map((s, i, arr) =>
-          s.trim() + (i < arr.length - 1 ? '。' : (poem.endsWith('。') ? '。' : ''))
+        const poemLines = poem.split('、').map((s, i, arr) =>
+          s.trim() + (i < arr.length - 1 ? '、' : '')
         )
         ctx.save()
         ctx.font = `400 ${poemFontSize}px 'Noto Serif JP', serif`
@@ -265,17 +265,17 @@ export default function App() {
       {coords && poem && (
         <div id="poem-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10, pointerEvents: 'none', padding: '40px 32px 0' }}>
           <div style={{ maxWidth: '80vw', textAlign: 'left', textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.5)' }}>
-            {poem.split('。').filter(s => s.trim()).map((s, i, arr) => (
+            {poem.split('、').map((s, i, arr) => (
               <p key={i} style={{
-                fontSize: 'clamp(20px, 3vw, 32px)',
+                fontSize: 'clamp(18px, 2.5vw, 28px)',
                 fontFamily: "'Noto Serif JP', 'Hiragino Mincho ProN', serif",
                 fontWeight: 400,
-                lineHeight: 1.6,
+                lineHeight: 1.5,
                 letterSpacing: 3,
                 color: '#FFFFFF',
-                marginBottom: i < arr.length - 1 ? 8 : 0,
+                marginBottom: 4,
               }}>
-                {s.trim()}{i < arr.length - 1 ? '。' : (poem.endsWith('。') ? '。' : '')}
+                {s.trim()}{i < arr.length - 1 ? '、' : ''}
               </p>
             ))}
           </div>
