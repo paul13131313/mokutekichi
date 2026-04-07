@@ -20,8 +20,6 @@ const CAMERA_DISTANCE_SOUTH = 800
 const CAMERA_ALTITUDE = 500
 const CAMERA_PITCH = -35
 
-const PILLAR_HEIGHT = 2000
-const PILLAR_RADIUS = 20
 
 export default function CesiumView({ lat, lng }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
