@@ -1,14 +1,12 @@
 import { useState, useRef, useCallback } from 'react'
 import CesiumView, { captureScreenshot } from './components/CesiumView'
 import SearchForm from './components/SearchForm'
-import LightPillar from './components/LightPillar'
 
 export default function App() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [label, setLabel] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [pillarX, setPillarX] = useState(50)
   const cesiumContainerRef = useRef<HTMLDivElement>(null)
 
   const handleSearch = useCallback((lat: number, lng: number, newLabel: string) => {
@@ -46,12 +44,8 @@ export default function App() {
         <CesiumView
           lat={coords?.lat ?? 0}
           lng={coords?.lng ?? 0}
-          onScreenPosition={setPillarX}
         />
       </div>
-
-      {/* Light Pillar — CSS overlay, completely independent from Cesium */}
-      <LightPillar visible={!!coords} xPercent={pillarX} />
 
       {/* Search Form — bottom overlay, collapses after search */}
       <SearchForm onSearch={handleSearch} loading={loading} hasResult={!!coords} />
