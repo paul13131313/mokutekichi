@@ -1,9 +1,6 @@
-import { useState, useRef, useCallback, useMemo } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import CesiumView from './components/CesiumView'
-import MobileView from './components/MobileView'
 import { getPoem } from './data/poems'
-
-const isMobile = window.innerWidth < 768
 
 export default function App() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
