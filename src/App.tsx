@@ -35,12 +35,19 @@ export default function App() {
     }
 
     // Nominatim (OpenStreetMap) Geocoding — APIキー不要
+    // 見つからなかったら「日本」を付けてリトライ
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query.trim())}&limit=1&accept-language=ja`
-      const res = await fetch(url, { headers: { 'User-Agent': 'mokutekichi-app' } })
-      if (!res.ok) throw new Error(`Geocoding failed: ${res.status}`)
-      const data = await res.json()
-      if (!data.length) { setError('見つかりませんでした'); return }
+      const q = query.trim()
+      const queries = [q, `${q}, 日本`, `日本 ${q}`, `東京都${q}`]
+      let data: { lat: string; lon: string; display_name: string }[] = []
+      for (const attempt of queries) {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(attempt)}&limit=1&accept-language=ja&countrycodes=jp`
+        const res = await fetch(url, { headers: { 'User-Agent': 'mokutekichi-app' } })
+        if (!res.ok) continue
+        data = await res.json()
+        if (data.length) break
+      }
+      if (!data.length) { setError('見つかりませんでした。住所をより詳しく入力してください'); return }
       const r = data[0]
       const lat = parseFloat(r.lat)
       const lng = parseFloat(r.lon)
