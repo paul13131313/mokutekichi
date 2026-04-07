@@ -10,7 +10,7 @@ export default function App() {
   const [saving, setSaving] = useState(false)
   const [pillarX, setPillarX] = useState(0)
   const [pillarY, setPillarY] = useState(0)
-  const cesiumContainerRef = useRef<HTMLDivElement>(null)
+  const cesiumRef = useRef<HTMLDivElement>(null)
 
   const handleSearch = useCallback((lat: number, lng: number, newLabel: string) => {
     setLoading(true)
@@ -20,7 +20,7 @@ export default function App() {
   }, [])
 
   const handleSave = useCallback(async () => {
-    const container = cesiumContainerRef.current
+    const container = cesiumRef.current
     if (!container) return
     setSaving(true)
     await new Promise((r) => setTimeout(r, 500))
@@ -42,14 +42,13 @@ export default function App() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      {/* Cesium 3D View */}
-      <div ref={cesiumContainerRef} style={{ width: '100%', height: '100%' }}>
-        <CesiumView
-          lat={coords?.lat ?? 0}
-          lng={coords?.lng ?? 0}
-          onScreenPos={(x, y) => { setPillarX(x); setPillarY(y) }}
-        />
-      </div>
+      {/* Cesium 3D View — no wrapper div, Cesium gets full control */}
+      <CesiumView
+        ref={cesiumRef}
+        lat={coords?.lat ?? 0}
+        lng={coords?.lng ?? 0}
+        onScreenPos={(x, y) => { setPillarX(x); setPillarY(y) }}
+      />
 
       {/* Light Pillar — CSS overlay, position tracked from Cesium postRender */}
       <LightPillar visible={!!coords} xPx={pillarX} yPx={pillarY} />

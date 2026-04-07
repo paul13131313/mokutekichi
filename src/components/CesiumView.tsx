@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import {
   Viewer,
   Cartesian3,
@@ -21,10 +21,12 @@ const CAMERA_DISTANCE_SOUTH = 800
 const CAMERA_ALTITUDE = 500
 const CAMERA_PITCH = -35
 
-export default function CesiumView({ lat, lng, onScreenPos }: Props) {
+const CesiumView = forwardRef<HTMLDivElement, Props>(({ lat, lng, onScreenPos }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<Viewer | null>(null)
   const removeListenerRef = useRef<(() => void) | null>(null)
+
+  useImperativeHandle(ref, () => containerRef.current!)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -78,13 +80,12 @@ export default function CesiumView({ lat, lng, onScreenPos }: Props) {
     const viewer = viewerRef.current
     if (!viewer || !lat || !lng) return
 
-    // Remove previous postRender listener
     if (removeListenerRef.current) {
       removeListenerRef.current()
       removeListenerRef.current = null
     }
 
-    // PostProcess: darken to night (no glow logic)
+    // PostProcess: darken to night
     const stages = viewer.scene.postProcessStages
     stages.removeAll()
     stages.add(
@@ -113,8 +114,7 @@ export default function CesiumView({ lat, lng, onScreenPos }: Props) {
       ),
     })
 
-    // Track screen position of target every frame
-    // 地面レベル（建物の足元）で追跡。3D Tilesの建物の高さ分を考慮して少し上げる
+    // Track screen position every frame
     const targetCartesian = Cartesian3.fromDegrees(lng, lat, 30)
     const listener = viewer.scene.postRender.addEventListener(() => {
       if (!onScreenPos) return
@@ -132,10 +132,13 @@ export default function CesiumView({ lat, lng, onScreenPos }: Props) {
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}
+      style={{ width: '100%', height: '100%' }}
     />
   )
-}
+})
+
+CesiumView.displayName = 'CesiumView'
+export default CesiumView
 
 export function captureScreenshot(containerEl: HTMLDivElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
