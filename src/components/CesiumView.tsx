@@ -97,7 +97,9 @@ const CesiumView = forwardRef<HTMLDivElement, Props>(({ lat, lng, onScreenPos },
 
   useEffect(() => {
     const viewer = viewerRef.current
-    if (!viewer || !lat || !lng) return
+    if (!viewer) return
+    // lat=0, lng=0 = initial state, don't do anything yet
+    if (lat === 0 && lng === 0) return
 
     if (removeListenerRef.current) {
       removeListenerRef.current()

@@ -1,6 +1,9 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import CesiumView from './components/CesiumView'
+import MobileView from './components/MobileView'
 import { getPoem } from './data/poems'
+
+const isMobile = window.innerWidth < 768
 
 export default function App() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -204,7 +207,7 @@ export default function App() {
           <div style={{ maxWidth: 560, margin: '0 auto', borderRadius: 16, padding: 20, background: 'rgba(10,10,10,0.88)', backdropFilter: 'blur(20px)', pointerEvents: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ color: '#00BFFF', fontSize: 14, fontWeight: 300, letterSpacing: 1 }}>マンションポエムメーカー</span>
-              <span style={{ fontSize: 10, opacity: 0.25 }}>v3.0</span>
+              <span style={{ fontSize: 10, opacity: 0.25 }}>v3.1</span>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch() }} style={{ display: 'flex', gap: 8 }}>
               <input
@@ -236,10 +239,8 @@ export default function App() {
             </div>
           )}
           {poem && (
-            <div style={{ pointerEvents: 'none', padding: '14px 18px', borderRadius: 8, maxWidth: 340, textAlign: 'right', background: 'rgba(10,10,10,0.75)', backdropFilter: 'blur(12px)', color: 'rgba(255,255,255,0.88)', fontSize: 14, lineHeight: 2.0, fontWeight: 300, letterSpacing: 0.8, fontFamily: "'Noto Sans JP', sans-serif" }}>
-              {poem.split('。').filter(s => s.trim()).map((s, i, arr) => (
-                <span key={i}>{s}{i < arr.length - 1 ? '。' : ''}{i < arr.length - 1 && <br />}</span>
-              ))}
+            <div style={{ pointerEvents: 'none', padding: '14px 18px', borderRadius: 8, maxWidth: 400, textAlign: 'right', background: 'rgba(10,10,10,0.75)', backdropFilter: 'blur(12px)', color: 'rgba(255,255,255,0.88)', fontSize: 14, lineHeight: 2.0, fontWeight: 300, letterSpacing: 0.8, fontFamily: "'Noto Sans JP', sans-serif", whiteSpace: 'pre-line' }}>
+              {poem.replace(/。/g, '。\n').replace(/\n$/, '')}
             </div>
           )}
           <div style={{ display: 'flex', gap: 8 }}>
