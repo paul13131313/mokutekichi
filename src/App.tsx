@@ -127,6 +127,42 @@ export default function App() {
         ctx.restore()
       }
 
+      // 3. Draw poem text
+      if (poem) {
+        const rect = cesiumCanvas.getBoundingClientRect()
+        const scaleX = w / rect.width
+        const poemFontSize = Math.round(36 * scaleX)
+        const poemLines = poem.split('。').filter(s => s.trim()).map((s, i, arr) => s + (i < arr.length - 1 ? '。' : ''))
+        ctx.save()
+        ctx.font = `400 ${poemFontSize}px 'Noto Serif JP', serif`
+        ctx.fillStyle = '#FFFFFF'
+        ctx.shadowColor = 'rgba(0,0,0,0.8)'
+        ctx.shadowBlur = 20 * scaleX
+        ctx.textAlign = 'left'
+        const x = 48 * scaleX
+        let y = 80 * scaleX
+        for (const line of poemLines) {
+          ctx.fillText(line, x, y + poemFontSize)
+          y += poemFontSize * 1.8
+        }
+        ctx.restore()
+      }
+
+      // 4. Draw address label (bottom left)
+      if (label) {
+        const rect = cesiumCanvas.getBoundingClientRect()
+        const scaleX = w / rect.width
+        const labelFontSize = Math.round(11 * scaleX)
+        ctx.save()
+        ctx.font = `300 ${labelFontSize}px 'Noto Sans JP', sans-serif`
+        ctx.fillStyle = 'rgba(255,255,255,0.5)'
+        ctx.shadowColor = 'rgba(0,0,0,0.8)'
+        ctx.shadowBlur = 8 * scaleX
+        ctx.textAlign = 'left'
+        ctx.fillText(label, 24 * scaleX, h - 40 * scaleX)
+        ctx.restore()
+      }
+
       // Export
       const blob = await new Promise<Blob>((resolve, reject) => {
         out.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
@@ -204,7 +240,7 @@ export default function App() {
           <div style={{ maxWidth: 560, margin: '0 auto', borderRadius: 16, padding: 20, background: 'rgba(10,10,10,0.88)', backdropFilter: 'blur(20px)', pointerEvents: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ color: '#00BFFF', fontSize: 14, fontWeight: 300, letterSpacing: 1 }}>マンションポエムメーカー</span>
-              <span style={{ fontSize: 10, opacity: 0.25 }}>v3.1</span>
+              <span style={{ fontSize: 10, opacity: 0.25 }}>v3.2</span>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch() }} style={{ display: 'flex', gap: 8 }}>
               <input
@@ -227,37 +263,52 @@ export default function App() {
         )}
       </div>
 
-      {/* Save button */}
-      {coords && (
-        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 20, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
-          {label && (
-            <div style={{ pointerEvents: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, maxWidth: 280, textAlign: 'right', background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(10px)', color: '#00BFFF' }}>
-              {label}
-            </div>
-          )}
-          {poem && (
-            <div style={{ pointerEvents: 'none', padding: '14px 18px', borderRadius: 8, maxWidth: 400, textAlign: 'right', background: 'rgba(10,10,10,0.75)', backdropFilter: 'blur(12px)', color: 'rgba(255,255,255,0.88)', fontSize: 14, lineHeight: 2.0, fontWeight: 300, letterSpacing: 0.8, fontFamily: "'Noto Sans JP', sans-serif", whiteSpace: 'pre-line' }}>
+      {/* Poem overlay — large typography like real estate ads */}
+      {coords && poem && (
+        <div id="poem-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10, pointerEvents: 'none', padding: '48px 32px 0' }}>
+          <div style={{ maxWidth: 700, whiteSpace: 'pre-line', textAlign: 'left', textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.5)' }}>
+            <p style={{
+              fontSize: 'clamp(28px, 5vw, 48px)',
+              fontFamily: "'Noto Serif JP', 'Hiragino Mincho ProN', serif",
+              fontWeight: 400,
+              lineHeight: 1.8,
+              letterSpacing: 3,
+              color: '#FFFFFF',
+            }}>
               {poem.replace(/。/g, '。\n').replace(/\n$/, '')}
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => {
-                const el = cesiumRef.current as HTMLDivElement & { recenter?: () => void }
-                el?.recenter?.()
-              }}
-              style={{ pointerEvents: 'auto', padding: '10px 16px', borderRadius: 8, fontSize: 14, cursor: 'pointer', background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,191,255,0.4)', color: '#00BFFF' }}
-            >
-              ◎
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{ pointerEvents: 'auto', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,191,255,0.4)', color: '#00BFFF', opacity: saving ? 0.5 : 1 }}
-            >
-              {saving ? '保存中...' : '📷 画像を保存'}
-            </button>
+            </p>
           </div>
+        </div>
+      )}
+
+      {/* Address label — bottom left */}
+      {coords && label && (
+        <div style={{ position: 'fixed', bottom: 80, left: 24, zIndex: 10, pointerEvents: 'none', maxWidth: 350 }}>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: 1, textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>
+            {label}
+          </p>
+        </div>
+      )}
+
+      {/* Action buttons — bottom right */}
+      {coords && (
+        <div style={{ position: 'fixed', bottom: 80, right: 24, zIndex: 20, pointerEvents: 'none', display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => {
+              const el = cesiumRef.current as HTMLDivElement & { recenter?: () => void }
+              el?.recenter?.()
+            }}
+            style={{ pointerEvents: 'auto', padding: '10px 16px', borderRadius: 8, fontSize: 14, cursor: 'pointer', background: 'rgba(10,10,10,0.7)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
+          >
+            ◎
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{ pointerEvents: 'auto', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: 'rgba(10,10,10,0.7)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', opacity: saving ? 0.5 : 1 }}
+          >
+            {saving ? '保存中...' : '📷 画像を保存'}
+          </button>
         </div>
       )}
 
