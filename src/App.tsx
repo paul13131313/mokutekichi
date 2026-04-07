@@ -1,15 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
-import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
+import { useState, useRef, useCallback } from 'react'
 import CesiumView from './components/CesiumView'
 import { getPoem } from './data/poems'
-
-// Start loading Maps SDK immediately at module load (not inside component)
-const geocoderPromise: Promise<google.maps.Geocoder> = (() => {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
-  if (!apiKey) return Promise.reject(new Error('No API key'))
-  setOptions({ key: apiKey, v: 'weekly' })
-  return importLibrary('geocoding').then((lib) => new lib.Geocoder())
-})()
 
 export default function App() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -23,15 +14,6 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false)
   const [error, setError] = useState('')
   const cesiumRef = useRef<HTMLDivElement>(null)
-  const geocoderRef = useRef<google.maps.Geocoder | null>(null)
-  const [geoReady, setGeoReady] = useState(false)
-
-  useEffect(() => {
-    geocoderPromise.then((gc) => {
-      geocoderRef.current = gc
-      setGeoReady(true)
-    }).catch(() => {})
-  }, [])
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return
@@ -53,16 +35,20 @@ export default function App() {
       }
     }
 
-    const geocoder = geocoderRef.current
-    if (!geocoder) { setError('少し待ってから再試行してください'); return }
-
+    // Nominatim (OpenStreetMap) Geocoding — APIキー不要
     try {
-      const res = await geocoder.geocode({ address: query.trim() })
-      if (!res.results?.length) { setError('見つかりませんでした'); return }
-      const r = res.results[0]
-      setCoords({ lat: r.geometry.location.lat(), lng: r.geometry.location.lng() })
-      setLabel(r.formatted_address)
-      setPoem(getPoem(r.formatted_address))
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query.trim())}&limit=1&accept-language=ja`
+      const res = await fetch(url, { headers: { 'User-Agent': 'mokutekichi-app' } })
+      if (!res.ok) throw new Error(`Geocoding failed: ${res.status}`)
+      const data = await res.json()
+      if (!data.length) { setError('見つかりませんでした'); return }
+      const r = data[0]
+      const lat = parseFloat(r.lat)
+      const lng = parseFloat(r.lon)
+      const displayName = r.display_name as string
+      setCoords({ lat, lng })
+      setLabel(displayName)
+      setPoem(getPoem(displayName))
       setCollapsed(true)
       setLoading(true)
       setTimeout(() => setLoading(false), 2000)
@@ -230,10 +216,10 @@ export default function App() {
               />
               <button
                 type="submit"
-                disabled={loading || !query.trim() || !geoReady}
-                style={{ padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: '#00BFFF', color: '#0a0a0a', border: 'none', opacity: (loading || !query.trim() || !geoReady) ? 0.3 : 1 }}
+                disabled={loading || !query.trim()}
+                style={{ padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: '#00BFFF', color: '#0a0a0a', border: 'none', opacity: (loading || !query.trim()) ? 0.3 : 1 }}
               >
-                {loading ? '...' : !geoReady ? '準備中' : '検索'}
+                {loading ? '...' : '検索'}
               </button>
             </form>
             {error && <p style={{ fontSize: 12, marginTop: 8, textAlign: 'center', color: '#ff6b6b' }}>{error}</p>}
