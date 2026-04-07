@@ -24,7 +24,6 @@ export default function App() {
     if (!container) return
     setSaving(true)
     await new Promise((r) => setTimeout(r, 500))
-
     try {
       const blob = await captureScreenshot(container)
       const url = URL.createObjectURL(blob)
@@ -41,8 +40,8 @@ export default function App() {
   }, [label])
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      {/* Cesium 3D View — no wrapper div, Cesium gets full control */}
+    <>
+      {/* Cesium — base layer, fills viewport */}
       <CesiumView
         ref={cesiumRef}
         lat={coords?.lat ?? 0}
@@ -50,7 +49,7 @@ export default function App() {
         onScreenPos={(x, y) => { setPillarX(x); setPillarY(y) }}
       />
 
-      {/* Light Pillar — CSS overlay, position tracked from Cesium postRender */}
+      {/* Light Pillar — pure visual, no interaction */}
       <LightPillar visible={!!coords} xPx={pillarX} yPx={pillarY} />
 
       {/* Search Form */}
@@ -58,11 +57,10 @@ export default function App() {
 
       {/* Save button */}
       {coords && (
-        <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-3">
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 20, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12, pointerEvents: 'auto' }}>
           {label && (
             <div
-              className="px-4 py-2 rounded-lg text-xs max-w-xs text-right"
-              style={{ background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(10px)', color: '#00BFFF' }}
+              style={{ padding: '8px 16px', borderRadius: 8, fontSize: 12, maxWidth: 280, textAlign: 'right', background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(10px)', color: '#00BFFF' }}
             >
               {label}
             </div>
@@ -70,12 +68,11 @@ export default function App() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-5 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer disabled:opacity-50"
             style={{
-              background: 'rgba(10,10,10,0.85)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(0,191,255,0.4)',
-              color: '#00BFFF',
+              padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer',
+              background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(0,191,255,0.4)', color: '#00BFFF',
+              opacity: saving ? 0.5 : 1,
             }}
           >
             {saving ? '保存中...' : '📷 画像を保存'}
@@ -83,12 +80,12 @@ export default function App() {
         </div>
       )}
 
-      {/* Initial state */}
+      {/* Initial message */}
       {!coords && (
-        <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
-          <p className="text-lg opacity-20">住所を入力して光の柱を立てよう</p>
+        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 1 }}>
+          <p style={{ fontSize: 18, opacity: 0.2 }}>住所を入力して光の柱を立てよう</p>
         </div>
       )}
-    </div>
+    </>
   )
 }

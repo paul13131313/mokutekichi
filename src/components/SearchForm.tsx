@@ -74,7 +74,7 @@ export default function SearchForm({ onSearch, loading, hasResult }: Props) {
   // 折りたたみ状態: 小さいピルだけ表示
   if (collapsed) {
     return (
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+      <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 20 }}>
         <button
           onClick={() => setCollapsed(false)}
           className="px-5 py-2.5 rounded-full text-xs cursor-pointer transition-all"
@@ -92,7 +92,7 @@ export default function SearchForm({ onSearch, loading, hasResult }: Props) {
   }
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-10 p-4 md:p-6">
+    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20, padding: 16 }}>
       <div
         className="max-w-xl mx-auto rounded-2xl p-5"
         style={{ background: 'rgba(10,10,10,0.88)', backdropFilter: 'blur(20px)' }}
@@ -104,7 +104,7 @@ export default function SearchForm({ onSearch, loading, hasResult }: Props) {
           >
             目的地という光景
           </h1>
-          <span className="text-[10px] opacity-25">v1.5</span>
+          <span className="text-[10px] opacity-25">v1.6</span>
         </div>
 
         <form onSubmit={handleSubmit} className="flex gap-2">

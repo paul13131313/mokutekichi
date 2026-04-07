@@ -8,8 +8,7 @@ export default function LightPillar({ visible, xPx, yPx }: { visible: boolean; x
 
   return (
     <div
-      className="absolute inset-0 pointer-events-none"
-      style={{ zIndex: 5, overflow: 'hidden' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 5, overflow: 'hidden', pointerEvents: 'none' }}
     >
       <div
         className="absolute"
