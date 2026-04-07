@@ -248,11 +248,12 @@ export default function App() {
             <div style={{ pointerEvents: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, maxWidth: 280, textAlign: 'right', background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(10px)', color: '#00BFFF' }}>
               {label}
             </div>
-            {poem && (
-              <div style={{ pointerEvents: 'none', padding: '12px 16px', borderRadius: 8, maxWidth: 320, textAlign: 'right', background: 'rgba(10,10,10,0.75)', backdropFilter: 'blur(10px)', color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.8, fontWeight: 300, letterSpacing: 0.5 }}>
-                {poem}
-              </div>
-            )}
+          )}
+          {poem && (
+            <div style={{ pointerEvents: 'none', padding: '12px 16px', borderRadius: 8, maxWidth: 320, textAlign: 'right', background: 'rgba(10,10,10,0.75)', backdropFilter: 'blur(10px)', color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.8, fontWeight: 300, letterSpacing: 0.5 }}>
+              {poem}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => {
