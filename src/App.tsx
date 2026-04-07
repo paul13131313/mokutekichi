@@ -44,10 +44,14 @@ export default function App() {
       const r = data[0]
       const lat = parseFloat(r.lat)
       const lng = parseFloat(r.lon)
-      const displayName = r.display_name as string
+      const raw = r.display_name as string
+      // Nominatimは欧米式(小→大)で返すので、日本の住所は逆順にする
+      const parts = raw.split(', ')
+      const isJapan = parts.some(p => p === '日本' || p === 'Japan')
+      const displayName = isJapan ? parts.reverse().join(' ') : raw
       setCoords({ lat, lng })
       setLabel(displayName)
-      setPoem(getPoem(displayName))
+      setPoem(getPoem(raw))
       setCollapsed(true)
       setLoading(true)
       setTimeout(() => setLoading(false), 2000)
