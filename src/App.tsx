@@ -253,7 +253,6 @@ export default function App() {
                 {poem}
               </div>
             )}
-          )}
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => {
