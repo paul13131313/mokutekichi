@@ -1,13 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 
 interface Props {
   onSearch: (lat: number, lng: number, label: string) => void
   loading: boolean
 }
 
-const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-
-// Check if input looks like coordinates (e.g., "35.6812, 139.7671")
 function parseCoordinates(input: string): { lat: number; lng: number } | null {
   const parts = input.split(',').map((s) => s.trim())
   if (parts.length !== 2) return null
@@ -18,25 +16,27 @@ function parseCoordinates(input: string): { lat: number; lng: number } | null {
   return { lat, lng }
 }
 
-async function geocode(address: string): Promise<{ lat: number; lng: number; label: string }> {
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${API_KEY}`
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Geocoding failed: ${res.status}`)
-  const data = await res.json()
-  if (!data.results || data.results.length === 0) {
-    throw new Error('住所が見つかりませんでした')
-  }
-  const loc = data.results[0].geometry.location
-  return {
-    lat: loc.lat,
-    lng: loc.lng,
-    label: data.results[0].formatted_address,
-  }
-}
-
 export default function SearchForm({ onSearch, loading }: Props) {
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
+  const geocoderRef = useRef<google.maps.Geocoder | null>(null)
+  const initialized = useRef(false)
+
+  // Maps JavaScript API SDK経由でGeocoderを初期化
+  useEffect(() => {
+    if (initialized.current) return
+    initialized.current = true
+
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
+    if (!apiKey) return
+
+    setOptions({ key: apiKey, v: 'weekly' })
+    importLibrary('geocoding').then((lib) => {
+      geocoderRef.current = new lib.Geocoder()
+    }).catch((err: unknown) => {
+      console.error('Failed to load Maps Geocoding library:', err)
+    })
+  }, [])
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,10 +50,22 @@ export default function SearchForm({ onSearch, loading }: Props) {
       return
     }
 
-    // Geocode address
+    // Geocode via Maps JavaScript API SDK
+    const geocoder = geocoderRef.current
+    if (!geocoder) {
+      setError('Geocoder がまだ読み込まれていません。少し待ってから再試行してください。')
+      return
+    }
+
     try {
-      const result = await geocode(query.trim())
-      onSearch(result.lat, result.lng, result.label)
+      const response = await geocoder.geocode({ address: query.trim() })
+      if (!response.results || response.results.length === 0) {
+        throw new Error('住所が見つかりませんでした')
+      }
+      const result = response.results[0]
+      const lat = result.geometry.location.lat()
+      const lng = result.geometry.location.lng()
+      onSearch(lat, lng, result.formatted_address)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'エラーが発生しました')
     }
