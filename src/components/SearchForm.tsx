@@ -4,6 +4,7 @@ import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 interface Props {
   onSearch: (lat: number, lng: number, label: string) => void
   loading: boolean
+  hasResult: boolean
 }
 
 function parseCoordinates(input: string): { lat: number; lng: number } | null {
@@ -16,20 +17,18 @@ function parseCoordinates(input: string): { lat: number; lng: number } | null {
   return { lat, lng }
 }
 
-export default function SearchForm({ onSearch, loading }: Props) {
+export default function SearchForm({ onSearch, loading, hasResult }: Props) {
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
+  const [collapsed, setCollapsed] = useState(false)
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)
   const initialized = useRef(false)
 
-  // Maps JavaScript API SDK経由でGeocoderを初期化
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
-
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
     if (!apiKey) return
-
     setOptions({ key: apiKey, v: 'weekly' })
     importLibrary('geocoding').then((lib) => {
       geocoderRef.current = new lib.Geocoder()
@@ -38,22 +37,25 @@ export default function SearchForm({ onSearch, loading }: Props) {
     })
   }, [])
 
+  // 検索結果が出たら自動的に折りたたむ
+  useEffect(() => {
+    if (hasResult) setCollapsed(true)
+  }, [hasResult])
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
     setError('')
 
-    // Try as coordinates first
     const coords = parseCoordinates(query.trim())
     if (coords) {
       onSearch(coords.lat, coords.lng, `${coords.lat}, ${coords.lng}`)
       return
     }
 
-    // Geocode via Maps JavaScript API SDK
     const geocoder = geocoderRef.current
     if (!geocoder) {
-      setError('Geocoder がまだ読み込まれていません。少し待ってから再試行してください。')
+      setError('Geocoder がまだ読み込まれていません')
       return
     }
 
@@ -63,27 +65,47 @@ export default function SearchForm({ onSearch, loading }: Props) {
         throw new Error('住所が見つかりませんでした')
       }
       const result = response.results[0]
-      const lat = result.geometry.location.lat()
-      const lng = result.geometry.location.lng()
-      onSearch(lat, lng, result.formatted_address)
+      onSearch(result.geometry.location.lat(), result.geometry.location.lng(), result.formatted_address)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'エラーが発生しました')
     }
   }, [query, onSearch])
 
-  return (
-    <div className="absolute top-0 left-0 right-0 z-10 p-4 md:p-6">
-      <div
-        className="max-w-xl mx-auto rounded-2xl p-5 md:p-6"
-        style={{ background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(20px)' }}
-      >
-        <h1
-          className="text-center text-sm md:text-base font-light tracking-wider mb-4"
-          style={{ color: '#00BFFF' }}
+  // 折りたたみ状態: 小さいピルだけ表示
+  if (collapsed) {
+    return (
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+        <button
+          onClick={() => setCollapsed(false)}
+          className="px-5 py-2.5 rounded-full text-xs cursor-pointer transition-all"
+          style={{
+            background: 'rgba(10,10,10,0.8)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(0,191,255,0.25)',
+            color: '#00BFFF',
+          }}
         >
-          目的地という光景（シンボル）
-        </h1>
-        <p className="text-center text-[10px] opacity-25 mb-3">v0.2</p>
+          🔍 別の場所を検索
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="absolute bottom-0 left-0 right-0 z-10 p-4 md:p-6">
+      <div
+        className="max-w-xl mx-auto rounded-2xl p-5"
+        style={{ background: 'rgba(10,10,10,0.88)', backdropFilter: 'blur(20px)' }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h1
+            className="text-sm font-light tracking-wider"
+            style={{ color: '#00BFFF' }}
+          >
+            目的地という光景
+          </h1>
+          <span className="text-[10px] opacity-25">v0.3</span>
+        </div>
 
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
@@ -102,19 +124,14 @@ export default function SearchForm({ onSearch, loading }: Props) {
             type="submit"
             disabled={loading || !query.trim()}
             className="px-6 py-3 rounded-lg text-sm font-medium transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{
-              background: '#00BFFF',
-              color: '#0a0a0a',
-            }}
+            style={{ background: '#00BFFF', color: '#0a0a0a' }}
           >
             {loading ? '...' : '検索'}
           </button>
         </form>
 
         {error && (
-          <p className="text-xs mt-2 text-center" style={{ color: '#ff6b6b' }}>
-            {error}
-          </p>
+          <p className="text-xs mt-2 text-center" style={{ color: '#ff6b6b' }}>{error}</p>
         )}
       </div>
     </div>

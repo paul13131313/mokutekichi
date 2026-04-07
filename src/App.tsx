@@ -13,7 +13,6 @@ export default function App() {
     setLoading(true)
     setCoords({ lat, lng })
     setLabel(newLabel)
-    // Give Cesium time to load tiles
     setTimeout(() => setLoading(false), 2000)
   }, [])
 
@@ -21,8 +20,6 @@ export default function App() {
     const container = cesiumContainerRef.current
     if (!container) return
     setSaving(true)
-
-    // Wait a frame for render
     await new Promise((r) => setTimeout(r, 500))
 
     try {
@@ -50,16 +47,16 @@ export default function App() {
         />
       </div>
 
-      {/* Search Form Overlay */}
-      <SearchForm onSearch={handleSearch} loading={loading} />
+      {/* Search Form — bottom overlay, collapses after search */}
+      <SearchForm onSearch={handleSearch} loading={loading} hasResult={!!coords} />
 
-      {/* Save Button */}
+      {/* Location label + Save button — top right */}
       {coords && (
-        <div className="absolute bottom-6 right-6 z-10 flex flex-col items-end gap-3">
+        <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-3">
           {label && (
             <div
               className="px-4 py-2 rounded-lg text-xs max-w-xs text-right"
-              style={{ background: 'rgba(10,10,10,0.8)', color: '#00BFFF' }}
+              style={{ background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(10px)', color: '#00BFFF' }}
             >
               {label}
             </div>
@@ -67,7 +64,7 @@ export default function App() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-3 rounded-lg text-sm font-medium transition-all cursor-pointer disabled:opacity-50"
+            className="px-5 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer disabled:opacity-50"
             style={{
               background: 'rgba(10,10,10,0.85)',
               backdropFilter: 'blur(10px)',
@@ -80,13 +77,12 @@ export default function App() {
         </div>
       )}
 
-      {/* Initial state message */}
+      {/* Initial state */}
       {!coords && (
         <div
           className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none"
-          style={{ background: 'rgba(10,10,10,0.6)' }}
         >
-          <p className="text-lg opacity-30">住所を入力して光の柱を立てよう</p>
+          <p className="text-lg opacity-20">住所を入力して光の柱を立てよう</p>
         </div>
       )}
     </div>

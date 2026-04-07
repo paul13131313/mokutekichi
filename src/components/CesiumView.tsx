@@ -6,33 +6,31 @@ import {
   HeadingPitchRoll,
   Math as CesiumMath,
   ColorMaterialProperty,
-  createGooglePhotorealistic3DTileset,
+  Cesium3DTileset,
+  Resource,
 } from 'cesium'
 import '@cesium/widgets/Source/widgets.css'
 
 interface Props {
   lat: number
   lng: number
-  onReady?: () => void
 }
 
-// Camera: 800m south, 500m altitude, pitch -35 degrees
 const CAMERA_DISTANCE_SOUTH = 800
 const CAMERA_ALTITUDE = 500
 const CAMERA_PITCH = -35
 
-// Light pillar
 const PILLAR_HEIGHT = 2000
 const PILLAR_RADIUS = 20
 
-export default function CesiumView({ lat, lng, onReady }: Props) {
+export default function CesiumView({ lat, lng }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<Viewer | null>(null)
 
   useEffect(() => {
     if (!containerRef.current) return
 
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
     if (!apiKey) {
       console.error('VITE_GOOGLE_MAPS_API_KEY is not set')
       return
@@ -52,7 +50,7 @@ export default function CesiumView({ lat, lng, onReady }: Props) {
       requestRenderMode: false,
       contextOptions: {
         webgl: {
-          preserveDrawingBuffer: true, // Required for screenshots
+          preserveDrawingBuffer: true,
         },
       },
     })
@@ -60,17 +58,21 @@ export default function CesiumView({ lat, lng, onReady }: Props) {
     // Remove default imagery
     viewer.imageryLayers.removeAll()
 
-    // Add Google Photorealistic 3D Tiles
-    createGooglePhotorealistic3DTileset(apiKey).then((tileset) => {
+    // Google Photorealistic 3D Tiles via Map Tiles API
+    const resource = new Resource({
+      url: 'https://tile.googleapis.com/v1/3dtiles/root.json',
+      queryParameters: { key: apiKey },
+    })
+
+    Cesium3DTileset.fromUrl(resource).then((tileset) => {
       viewer.scene.primitives.add(tileset)
-      onReady?.()
-    }).catch((err) => {
+    }).catch((err: unknown) => {
       console.error('Failed to load Google 3D Tiles:', err)
     })
 
-    // Disable atmosphere/sky for cleaner look
-    if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = true
-    viewer.scene.globe.show = false // Globe hidden when using 3D tiles
+    // Globe visible as fallback under 3D tiles
+    viewer.scene.globe.show = true
+    viewer.scene.globe.baseColor = Color.fromCssColorString('#1a1a2e')
 
     viewerRef.current = viewer
 
@@ -85,10 +87,9 @@ export default function CesiumView({ lat, lng, onReady }: Props) {
     const viewer = viewerRef.current
     if (!viewer || !lat || !lng) return
 
-    // Remove existing entities
     viewer.entities.removeAll()
 
-    // Add light pillar
+    // Outer pillar (cyan, semi-transparent)
     const position = Cartesian3.fromDegrees(lng, lat, PILLAR_HEIGHT / 2)
     viewer.entities.add({
       position,
@@ -103,7 +104,7 @@ export default function CesiumView({ lat, lng, onReady }: Props) {
       },
     })
 
-    // Add brighter inner glow pillar
+    // Inner glow pillar (white)
     viewer.entities.add({
       position,
       cylinder: {
@@ -117,7 +118,7 @@ export default function CesiumView({ lat, lng, onReady }: Props) {
       },
     })
 
-    // Add ground glow circle
+    // Ground glow circle
     viewer.entities.add({
       position: Cartesian3.fromDegrees(lng, lat, 2),
       ellipse: {
@@ -130,14 +131,14 @@ export default function CesiumView({ lat, lng, onReady }: Props) {
       },
     })
 
-    // Camera position: south of target
+    // Camera: south of target, looking north-up
     const targetLat = lat - (CAMERA_DISTANCE_SOUTH / 111320)
     const cameraPosition = Cartesian3.fromDegrees(lng, targetLat, CAMERA_ALTITUDE)
 
     viewer.camera.setView({
       destination: cameraPosition,
       orientation: new HeadingPitchRoll(
-        CesiumMath.toRadians(0), // heading: north
+        CesiumMath.toRadians(0),
         CesiumMath.toRadians(CAMERA_PITCH),
         0
       ),
